@@ -1,0 +1,11 @@
+.DS_Store
+.venv/
+Data/raw/
+Data/processed/
+*.png
+*.jpg
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+*.pt
+*.pth
