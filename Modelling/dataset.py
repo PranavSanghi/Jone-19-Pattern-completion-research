@@ -1,4 +1,4 @@
-from calendar import c
+
 import torch 
 import json 
 from torch.utils.data import Dataset 
@@ -8,21 +8,21 @@ from torchvision import transforms
 
 class Candidatecreator (Dataset):
     def __init__(self,jsonl_path,data_root):
-        self.data_root = data_root
+        self.data_root = Path(data_root)
         self.pairs =  []
         with open(jsonl_path) as f:
             for line in f:
                 sample1 = json.loads(line)
                 self._extract_pairs(sample1)
-        print (f"#1 len(self.pairs) from {jsonl_path}")
+        print(f"Loaded {len(self.pairs)} pairs from {jsonl_path}")
     def _extract_pairs(self,sample1):
-        contextimg  = self.data_root / "contexts" / f"{sample1['sample_id']}_context.png"#path to conext image
+        contextimg  = self.data_root / "contexts" / f"{sample1['sample_id']}.png"
         for hole in sample1['holes']:
-            idx = hole['idx']
+            idx = hole['hole_idx']
             x = hole['x']#leftmost x coordinate  
             y = hole['y']#topmost y coordinate
 
-            for candidate in hole['candidates']:
+            for candidate in sample1['candidates']:
                 if candidate['type'] == "correct" and candidate["for_hole"] == idx:#Correct context patch pair
                     label = 1
                 else:
@@ -31,12 +31,13 @@ class Candidatecreator (Dataset):
                     "context_path":contextimg,
                     "hole_x":x,
                     "hole_y":y,
-                    "candidate_path":candidate["path"],
+                    "candidate_path": str(self.data_root / candidate["path"]),
+
                     "label":label 
 
                 })
 
-    def _len_(self):
+    def __len__(self):  # not _len_
         return len(self.pairs)
     def __getitem__(self,idx):
         pair = self.pairs[idx]
