@@ -6,13 +6,19 @@ from dataset import Candidatecreator
 from model import model as lol
 from tqdm import tqdm
 
+
 def train():
-    device = torch.device("cuda" if torch.cuda.is_available() 
-                       else "mps" if torch.backends.mps.is_available() 
-                       else "cpu")
+    device = torch.device(
+        "cuda"
+        if torch.cuda.is_available()
+        else "mps"
+        if torch.backends.mps.is_available()
+        else "cpu"
+    )
     epochs = 50
     batch_size = 256
     lr = 1e-4
+    patience = 5
 
     train_set = Candidatecreator(
         jsonl_path="../Data/processed/train.jsonl",
@@ -21,27 +27,28 @@ def train():
     )
     val_set = Candidatecreator(
         jsonl_path="../Data/processed/val.jsonl",
-        data_root="../Data/processed"
-        
+        data_root="../Data/processed",
+        sample_negatives=3,
     )
 
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False)
     net = lol().to(device)
-    optimizer = optim.Adam(net.parameters(),lr=lr)
+    optimizer = optim.Adam(net.parameters(), lr=lr)
     criterion = nn.BCELoss()
-    best = float('inf')
+    best = float("inf")
+    stale = 0
     for epoch in range(epochs):
         net.train()
         total_loss = 0
         for batch in tqdm(train_loader, desc=f"Epoch {epoch+1}"):
-            imgs,patches,labels = batch
+            imgs, patches, labels = batch
             patches = patches.to(device)
             imgs = imgs.to(device)
             labels = labels.to(device).float()
             optimizer.zero_grad()
-            outputs = net(patches,imgs).squeeze(1)
-            loss = criterion(outputs,labels)
+            outputs = net(patches, imgs).squeeze(1)
+            loss = criterion(outputs, labels)
             total_loss += loss.item()
             loss.backward()
             optimizer.step()
@@ -55,16 +62,22 @@ def train():
                 imgs = imgs.to(device)
                 labels = labels.to(device).float()
                 outputs = net(patches, imgs).squeeze(1)
-                loss = criterion(outputs,labels)
+                loss = criterion(outputs, labels)
                 total_loss += loss.item()
-            print(f"Epoch {epoch+1}, Val Loss: {total_loss/len(val_loader)}")
-            val_loss = total_loss/len(val_loader)
-            if val_loss < best:
-                best = val_loss
-                torch.save(net.state_dict(),'best_model.pth')
-        
-    print("Model saved")
-    
+            val_loss = total_loss / len(val_loader)
+            print(f"Epoch {epoch+1}, Val Loss: {val_loss}")
+        if val_loss < best:
+            best = val_loss
+            stale = 0
+            torch.save(net.state_dict(), "best_model.pth")
+            print(f"Saved best model (val_loss={best:.4f})")
+        else:
+            stale += 1
+            print(f"No improvement ({stale}/{patience})")
+            if stale >= patience:
+                print(f"Early stopping at epoch {epoch+1}")
+                break
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     train()
