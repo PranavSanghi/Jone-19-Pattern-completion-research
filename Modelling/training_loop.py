@@ -16,14 +16,15 @@ def train():
 
     train_set = Candidatecreator(
         jsonl_path="../Data/processed/train.jsonl",
-        data_root="../Data/processed"
+        data_root="../Data/processed",
+        sample_negatives=3,
     )
     val_set = Candidatecreator(
         jsonl_path="../Data/processed/val.jsonl",
-        data_root="../Data/processed"
+        data_root="../Data/processed",
+        sample_negatives=3,
     )
 
-    
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False)
     net = lol().to(device)
@@ -49,11 +50,11 @@ def train():
         with torch.no_grad():
             total_loss = 0
             for batch in val_loader:
-                patches,imgs,labels = batch
+                imgs, patches, labels = batch
                 patches = patches.to(device)
                 imgs = imgs.to(device)
                 labels = labels.to(device).float()
-                outputs = net(patches,imgs).squeeze(1)
+                outputs = net(patches, imgs).squeeze(1)
                 loss = criterion(outputs,labels)
                 total_loss += loss.item()
             print(f"Epoch {epoch+1}, Val Loss: {total_loss/len(val_loader)}")
