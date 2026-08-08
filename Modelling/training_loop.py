@@ -11,7 +11,7 @@ def train():
                        else "mps" if torch.backends.mps.is_available() 
                        else "cpu")
     epochs = 50
-    batch_size = 16
+    batch_size = 256
     lr = 1e-4
 
     train_set = Candidatecreator(
@@ -24,8 +24,8 @@ def train():
     )
 
     
-    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=0)
-    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=0)
+    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False)
     net = lol().to(device)
     optimizer = optim.Adam(net.parameters(),lr=lr)
     criterion = nn.BCELoss()
