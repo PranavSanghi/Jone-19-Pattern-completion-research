@@ -27,7 +27,7 @@ def train():
     )
     val_set = Candidatecreator(
         jsonl_path="../Data/processed/val.jsonl",
-        data_root="../Data/processed",
+        data_root="../Data/processed"
     )
 
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
@@ -72,11 +72,13 @@ def train():
 
             hole_correct = 0
             hole_total = 0
-            for i in range(0, len(all_scores), 32):
-                chunk_scores = all_scores[i : i + 32]
-                chunk_labels = all_labels[i : i + 32]
-                if len(chunk_scores) < 32:
-                    break
+            offset = 0
+            for n in val_set.hole_sizes:
+                chunk_scores = all_scores[offset : offset + n]
+                chunk_labels = all_labels[offset : offset + n]
+                offset += n
+                if not chunk_scores:
+                    continue
                 pred_idx = chunk_scores.index(max(chunk_scores))
                 if chunk_labels[pred_idx] == 1:
                     hole_correct += 1

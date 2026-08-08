@@ -13,6 +13,7 @@ class Candidatecreator(Dataset):
         self.data_root = Path(data_root)
         self.sample_negatives = sample_negatives
         self.pairs = []
+        self.hole_sizes = []
         with open(jsonl_path) as f:
             for line in f:
                 sample = json.loads(line)
@@ -45,11 +46,14 @@ class Candidatecreator(Dataset):
                     negatives.append(pair)
             self.pairs.extend(correct)
             if self.sample_negatives is not None:
-                self.pairs.extend(
-                    random.sample(negatives, min(self.sample_negatives, len(negatives)))
+                chosen = random.sample(
+                    negatives, min(self.sample_negatives, len(negatives))
                 )
+                self.pairs.extend(chosen)
+                self.hole_sizes.append(len(correct) + len(chosen))
             else:
                 self.pairs.extend(negatives)
+                self.hole_sizes.append(len(correct) + len(negatives))
 
     def __len__(self):
         return len(self.pairs)
