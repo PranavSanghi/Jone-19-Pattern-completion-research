@@ -21,8 +21,8 @@ def train():
     )
     val_set = Candidatecreator(
         jsonl_path="../Data/processed/val.jsonl",
-        data_root="../Data/processed",
-        sample_negatives=3,
+        data_root="../Data/processed"
+        
     )
 
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
@@ -58,11 +58,13 @@ def train():
                 loss = criterion(outputs,labels)
                 total_loss += loss.item()
             print(f"Epoch {epoch+1}, Val Loss: {total_loss/len(val_loader)}")
-    val_loss = total_loss/len(val_loader)
-    if val_loss < best:
-        best = val_loss
-        torch.save(net.state_dict(),'best_model.pth')
+            val_loss = total_loss/len(val_loader)
+            if val_loss < best:
+                best = val_loss
+                torch.save(net.state_dict(),'best_model.pth')
+        
     print("Model saved")
+    
 
 if __name__ == '__main__':
     train()

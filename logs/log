@@ -1,1 +1,2 @@
-Binary classification(32 candidates per hole, resnet embeddings - mlp - sigmoid)-
+Binary classification(32 candidates per hole, resnet embeddings - mlp - sigmoid)-Make context pair patches by 192*192 snippet and patching if required -Worse than random 
+384*384 
