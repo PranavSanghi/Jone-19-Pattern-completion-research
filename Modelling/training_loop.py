@@ -28,7 +28,6 @@ def train():
     val_set = Candidatecreator(
         jsonl_path="../Data/processed/val.jsonl",
         data_root="../Data/processed",
-        sample_negatives=3,
     )
 
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
@@ -55,7 +54,9 @@ def train():
         print(f"Epoch {epoch+1}, Loss: {total_loss/len(train_loader)}")
         net.eval()
         with torch.no_grad():
-            total_loss = 0
+            val_total_loss = 0
+            all_scores = []
+            all_labels = []
             for batch in val_loader:
                 imgs, patches, labels = batch
                 patches = patches.to(device)
@@ -63,9 +64,29 @@ def train():
                 labels = labels.to(device).float()
                 outputs = net(patches, imgs).squeeze(1)
                 loss = criterion(outputs, labels)
-                total_loss += loss.item()
-            val_loss = total_loss / len(val_loader)
-            print(f"Epoch {epoch+1}, Val Loss: {val_loss}")
+                val_total_loss += loss.item()
+                all_scores.extend(outputs.cpu().tolist())
+                all_labels.extend(labels.cpu().tolist())
+
+            val_loss = val_total_loss / len(val_loader)
+
+            hole_correct = 0
+            hole_total = 0
+            for i in range(0, len(all_scores), 32):
+                chunk_scores = all_scores[i : i + 32]
+                chunk_labels = all_labels[i : i + 32]
+                if len(chunk_scores) < 32:
+                    break
+                pred_idx = chunk_scores.index(max(chunk_scores))
+                if chunk_labels[pred_idx] == 1:
+                    hole_correct += 1
+                hole_total += 1
+
+            hole_acc = hole_correct / hole_total if hole_total > 0 else 0
+            print(
+                f"Epoch {epoch+1}, Val Loss: {val_loss:.4f}, "
+                f"Hole Acc: {hole_acc:.4f} ({hole_correct}/{hole_total})"
+            )
         if val_loss < best:
             best = val_loss
             stale = 0
