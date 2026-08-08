@@ -35,7 +35,7 @@ def train():
     net = lol().to(device)
     optimizer = optim.Adam(net.parameters(), lr=lr)
     criterion = nn.BCELoss()
-    best = float("inf")
+    best = -1.0
     stale = 0
     for epoch in range(epochs):
         net.train()
@@ -89,11 +89,11 @@ def train():
                 f"Epoch {epoch+1}, Val Loss: {val_loss:.4f}, "
                 f"Hole Acc: {hole_acc:.4f} ({hole_correct}/{hole_total})"
             )
-        if val_loss < best:
-            best = val_loss
+        if hole_acc > best:
+            best = hole_acc
             stale = 0
             torch.save(net.state_dict(), "best_model.pth")
-            print(f"Saved best model (val_loss={best:.4f})")
+            print(f"Saved best model (hole_acc={best:.4f})")
         else:
             stale += 1
             print(f"No improvement ({stale}/{patience})")
