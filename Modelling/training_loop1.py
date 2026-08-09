@@ -25,7 +25,7 @@ def train():
 
     epochs = 50
     batch_size = 256
-    lr = 1e-4
+    lr = 1e-5
     patience = 5
     num_workers = max(1, (os.cpu_count() or 2) - 1)
     pin_memory = device.type == "cuda"
