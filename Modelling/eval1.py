@@ -1,3 +1,5 @@
+import os
+
 import torch
 from torch.utils.data import DataLoader
 from dataset1 import Candidatecreator
@@ -12,6 +14,15 @@ def evaluate():
         if torch.backends.mps.is_available()
         else "cpu"
     )
+    num_workers = max(1, (os.cpu_count() or 2) - 1)
+    pin_memory = device.type == "cuda"
+    loader_kwargs = {
+        "num_workers": num_workers,
+        "pin_memory": pin_memory,
+        "persistent_workers": num_workers > 0,
+        "prefetch_factor": 4 if num_workers > 0 else None,
+    }
+    loader_kwargs = {k: v for k, v in loader_kwargs.items() if v is not None}
 
     net = PatchMatcher().to(device)
     net.load_state_dict(torch.load("best_model1.pth", map_location=device))
@@ -21,7 +32,9 @@ def evaluate():
         "../Data/processed/test.jsonl",
         "../Data/processed",
     )
-    test_loader = DataLoader(test_set, batch_size=64, shuffle=False)
+    test_loader = DataLoader(
+        test_set, batch_size=128, shuffle=False, **loader_kwargs
+    )
 
     correct = 0
     total = 0
@@ -31,8 +44,8 @@ def evaluate():
 
     with torch.no_grad():
         for imgs, labels in test_loader:
-            imgs = imgs.to(device)
-            labels = labels.to(device)
+            imgs = imgs.to(device, non_blocking=pin_memory)
+            labels = labels.to(device, non_blocking=pin_memory)
 
             outputs = net(imgs).squeeze(1)
 

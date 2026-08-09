@@ -1,3 +1,5 @@
+import os
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -15,23 +17,43 @@ def train():
         if torch.backends.mps.is_available()
         else "cpu"
     )
+    if device.type == "cuda":
+        torch.backends.cudnn.benchmark = True
+    print(f"Using device: {device}", flush=True)
+    if device.type == "cuda":
+        print(f"GPU: {torch.cuda.get_device_name(0)}", flush=True)
+
     epochs = 50
     batch_size = 256
     lr = 1e-4
     patience = 5
+    num_workers = max(1, (os.cpu_count() or 2) - 1)
+    pin_memory = device.type == "cuda"
+    loader_kwargs = {
+        "num_workers": num_workers,
+        "pin_memory": pin_memory,
+        "persistent_workers": num_workers > 0,
+        "prefetch_factor": 4 if num_workers > 0 else None,
+    }
+    loader_kwargs = {k: v for k, v in loader_kwargs.items() if v is not None}
+    print(f"DataLoader workers: {num_workers}", flush=True)
 
     train_set = Candidatecreator(
         jsonl_path="../Data/processed/train.jsonl",
         data_root="../Data/processed",
-        sample_negatives=3,
+        
     )
     val_set = Candidatecreator(
         jsonl_path="../Data/processed/val.jsonl",
         data_root="../Data/processed",
     )
 
-    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False)
+    train_loader = DataLoader(
+        train_set, batch_size=batch_size, shuffle=True, **loader_kwargs
+    )
+    val_loader = DataLoader(
+        val_set, batch_size=batch_size, shuffle=False, **loader_kwargs
+    )
     net = lol().to(device)
     optimizer = optim.Adam(net.parameters(), lr=lr)
     criterion = nn.BCELoss()
@@ -42,9 +64,9 @@ def train():
         total_loss = 0
         for batch in tqdm(train_loader, desc=f"Epoch {epoch+1}"):
             imgs, labels = batch
-            imgs = imgs.to(device)
-            labels = labels.to(device).float()
-            optimizer.zero_grad()
+            imgs = imgs.to(device, non_blocking=pin_memory)
+            labels = labels.to(device, non_blocking=pin_memory).float()
+            optimizer.zero_grad(set_to_none=True)
             outputs = net(imgs).squeeze(1)
             loss = criterion(outputs, labels)
             total_loss += loss.item()
@@ -58,8 +80,8 @@ def train():
             all_labels = []
             for batch in val_loader:
                 imgs, labels = batch
-                imgs = imgs.to(device)
-                labels = labels.to(device).float()
+                imgs = imgs.to(device, non_blocking=pin_memory)
+                labels = labels.to(device, non_blocking=pin_memory).float()
                 outputs = net(imgs).squeeze(1)
                 loss = criterion(outputs, labels)
                 val_total_loss += loss.item()
