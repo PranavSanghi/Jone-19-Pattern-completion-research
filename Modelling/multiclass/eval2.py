@@ -16,7 +16,7 @@ def evaluate():
     net.eval()
 
     test_set = HoleDataset("../../Data/processed/test.jsonl", "../../Data/processed")
-    test_loader = DataLoader(test_set, batch_size=16, shuffle=False)
+    test_loader = DataLoader(test_set, batch_size=8, shuffle=False)
 
     correct = 0
     total = 0

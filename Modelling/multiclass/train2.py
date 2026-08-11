@@ -15,7 +15,7 @@ def train():
     )
 
     epochs = 50
-    batch_size = 16
+    batch_size = 8
     lr = 1e-5
     patience = 5
 
