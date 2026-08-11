@@ -16,27 +16,30 @@ class ds(Dataset):
                 self._extract_holes(sample)
         print(f"Loaded {len(self.holes)} holes from {jsonl_path}")
 
-    def _extract_holes(self,sample):
+    def _extract_holes(self, sample):
+        if len(sample["candidates"]) != 32:
+            return
         context_path = self.data_root / "contexts" / f"{sample['sample_id']}.png"
+        candidates = sorted(sample["candidates"], key=lambda c: c["idx"])
         for hole in sample["holes"]:
-            candidates = sorted(sample["candidates"], key=lambda c: c["idx"])
-
             correct_idx = None
             for i, c in enumerate(candidates):
                 if c["type"] == "correct" and c["for_hole"] == hole["hole_idx"]:
                     correct_idx = i
                     break
-
             if correct_idx is None:
                 continue
-
-            self.holes.append({
-                "context_path": str(context_path),
-                "hole_x": hole["x"],
-                "hole_y": hole["y"],
-                "candidate_paths": [str(self.data_root / c["path"]) for c in candidates],
-                "correct_idx": correct_idx,
-            })
+            self.holes.append(
+                {
+                    "context_path": str(context_path),
+                    "hole_x": hole["x"],
+                    "hole_y": hole["y"],
+                    "candidate_paths": [
+                        str(self.data_root / c["path"]) for c in candidates
+                    ],
+                    "correct_idx": correct_idx,
+                }
+            )
     def __len__(self):
         return len(self.holes)
 
