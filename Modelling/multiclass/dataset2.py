@@ -61,7 +61,7 @@ class ds(Dataset):
             img = context.copy()
             patch = Image.open(path).convert("RGB")
             img.paste(patch, (hx + 16, hy + 16))
-            img = img.resize((224, 224), Image.BILINEAR)#remember to experiment if low 
+            img = img.resize((448, 448), Image.BILINEAR)#remember to experiment if low 
             composites.append(to_tensor(img))
 
         composites = torch.stack(composites)  # 32 3 224 224 

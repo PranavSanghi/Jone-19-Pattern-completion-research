@@ -27,7 +27,7 @@ class MultiClassMatcher(nn.Module):
         self.head = nn.Sequential(
             nn.Linear(512, 256),
             nn.ReLU(),
-            nn.Dropout(0.3),
+            
             nn.Linear(256, 1),
         )
 
@@ -35,7 +35,7 @@ class MultiClassMatcher(nn.Module):
         batch_size = composites.size(0)
         num_cands = composites.size(1)
 
-        x = composites.view(-1, 3, 224, 224)
+        x = composites.view(-1, 3, 448, 448)
         x = self.backbone(x)          # [batch*32, vhannels , 7, 7]
         x = self.pool(x).flatten(1)   # [batch*32, ch]
         x = self.head(x)              # [batch*32, 1]
