@@ -5,11 +5,15 @@ from PIL import Image
 from pathlib import Path
 from torchvision import transforms
 
+HOLE_MARGIN = 32
+INPUT_SIZE = 672
+NUM_CANDIDATES = 32
+
 
 class ds(Dataset):
-    def __init__(self,jsonl_path,data_root):
+    def __init__(self, jsonl_path, data_root):
         self.data_root = Path(data_root)
-        self.holes=[]
+        self.holes = []
         with open(jsonl_path) as f:
             for line in f:
                 sample = json.loads(line)
@@ -17,7 +21,7 @@ class ds(Dataset):
         print(f"Loaded {len(self.holes)} holes from {jsonl_path}")
 
     def _extract_holes(self, sample):
-        if len(sample["candidates"]) != 32:
+        if len(sample["candidates"]) != NUM_CANDIDATES:
             return
         context_path = self.data_root / "contexts" / f"{sample['sample_id']}.png"
         candidates = sorted(sample["candidates"], key=lambda c: c["idx"])
@@ -40,6 +44,7 @@ class ds(Dataset):
                     "correct_idx": correct_idx,
                 }
             )
+
     def __len__(self):
         return len(self.holes)
 
@@ -50,21 +55,23 @@ class ds(Dataset):
         hx = hole["hole_x"]
         hy = hole["hole_y"]
 
-        to_tensor = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                 std=[0.229, 0.224, 0.225])
-        ])
+        to_tensor = transforms.Compose(
+            [
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                ),
+            ]
+        )
 
         composites = []
         for path in hole["candidate_paths"]:
             img = context.copy()
             patch = Image.open(path).convert("RGB")
-            img.paste(patch, (hx + 16, hy + 16))
-            img = img.resize((672, 672), Image.BILINEAR)#remember to experiment if low 
+            img.paste(patch, (hx + HOLE_MARGIN, hy + HOLE_MARGIN))
+            img = img.resize((INPUT_SIZE, INPUT_SIZE), Image.BILINEAR)
             composites.append(to_tensor(img))
 
-        composites = torch.stack(composites)  # 32 3 224 224 
+        composites = torch.stack(composites)
         label = hole["correct_idx"]
-
         return composites, label
