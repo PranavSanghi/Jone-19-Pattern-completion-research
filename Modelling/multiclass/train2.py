@@ -15,7 +15,7 @@ def train():
     )
 
     epochs = 50
-    batch_size = 8
+    batch_size = 4
     lr = 1e-5
     patience = 5
 
@@ -23,9 +23,9 @@ def train():
     val_set = HoleDataset("../../Data/processed/val.jsonl", "../../Data/processed")
 
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True,
-                              num_workers=4, pin_memory=True)
+                               pin_memory=True)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False,
-                            num_workers=4, pin_memory=True)
+                             pin_memory=True)
 
     net = MultiClassMatcher().to(device)
     optimizer = optim.Adam(filter(lambda p: p.requires_grad, net.parameters()),
